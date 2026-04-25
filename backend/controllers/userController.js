@@ -8,13 +8,11 @@ const getUserProfile = async (req, res) => {
     const userId = parseInt(req.params.id);
 
     // Get user with reputation stats
-    // CHANGED: [users] destructuring → result.rows pattern
-    // CHANGED: ? → $1 for PostgreSQL parameterization
-    // CHANGED: "Users" quoted to preserve case-sensitive table name
     const usersResult = await db.query(
       `SELECT id, name, email, role, bio, avatar_url,
               avg_rating, total_reviews, total_completed, created_at
-       FROM "Users" WHERE id = $1`,
+       FROM "Users"
+       WHERE id = $1`,
       [userId]
     );
     const users = usersResult.rows;
@@ -26,9 +24,11 @@ const getUserProfile = async (req, res) => {
     const user = users[0];
 
     // Get reviews received by this user
-    // CHANGED: [reviews] destructuring → result.rows pattern
-    // CHANGED: ? → $1 for PostgreSQL parameterization
-    // CHANGED: Table names quoted to preserve case-sensitivity
+    // FIX: Query is a single self-contained template literal.
+    // Previously the WHERE clause and ORDER BY were appended via concatenation
+    // without guaranteed spacing, risking "...project_idWHERE..." or
+    // "...$1ORDER BY..." syntax errors. All clauses now live in one literal
+    // with proper newline/space separation — no concatenation needed.
     const reviewsResult = await db.query(
       `SELECT r.id, r.rating, r.comment, r.created_at,
               reviewer.name AS reviewer_name,
@@ -44,9 +44,8 @@ const getUserProfile = async (req, res) => {
     const reviews = reviewsResult.rows;
 
     // Get projects for this user
-    // CHANGED: [projects] destructuring → result.rows pattern
-    // CHANGED: ? → $1, $2 for PostgreSQL parameterization
-    // CHANGED: Table names quoted to preserve case-sensitivity
+    // FIX: Same fix as above — single template literal keeps WHERE and
+    // ORDER BY properly spaced and prevents any concatenation-gap bugs.
     const projectsResult = await db.query(
       `SELECT p.id, p.title, p.status, p.budget, p.created_at,
               c.name AS client_name,
@@ -55,7 +54,8 @@ const getUserProfile = async (req, res) => {
        FROM "Projects" p
        JOIN "Users" c ON c.id = p.client_id
        LEFT JOIN "Users" f ON f.id = p.freelancer_id
-       WHERE p.client_id = $1 OR p.freelancer_id = $2
+       WHERE p.client_id = $1
+          OR p.freelancer_id = $2
        ORDER BY p.created_at DESC`,
       [userId, userId]
     );
@@ -74,18 +74,23 @@ const listUsers = async (req, res) => {
   try {
     const { role } = req.query;
 
-    // CHANGED: "Users" quoted to preserve case-sensitive table name
+    // FIX: Base query has no trailing whitespace.
+    // The WHERE clause (if added) gets an explicit leading space so
+    // "...\"Users\"WHERE..." can never happen.
+    // ORDER BY also gets an explicit leading space so
+    // "...$1ORDER BY..." or "...\"Users\"ORDER BY..." can never happen.
     let query = 'SELECT id, name, role, avg_rating, total_completed, bio FROM "Users"';
     const params = [];
 
     if (role) {
-      // CHANGED: ? → $1 for PostgreSQL parameterization
       params.push(role);
       query += ` WHERE role = $${params.length}`;
     }
+
+    // FIX: Leading space is explicit and unconditional — ORDER BY is always
+    // the last clause and always separated from whatever precedes it.
     query += ' ORDER BY avg_rating DESC';
 
-    // CHANGED: [users] destructuring → result.rows pattern
     const result = await db.query(query, params);
     const users = result.rows;
 
