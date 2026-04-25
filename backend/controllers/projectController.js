@@ -1,5 +1,6 @@
 // controllers/projectController.js — Project CRUD operations
 // MIGRATED: MySQL → PostgreSQL (pg library)
+// UPDATED: Quoted table names ("Projects", "Users") → lowercase to match renamed schema
 const db = require('../config/db');
 
 // ── POST /project — Create a new project ────────────────────
@@ -17,9 +18,10 @@ const createProject = async (req, res) => {
     }
 
     // If freelancer_id provided, validate it exists and is a freelancer
+    // TABLE: users (lowercase, no quotes)
     if (freelancer_id) {
       const flResult = await db.query(
-        "SELECT id FROM \"Users\" WHERE id = $1 AND role = 'freelancer'",
+        "SELECT id FROM users WHERE id = $1 AND role = 'freelancer'",
         [freelancer_id]
       );
       const fl = flResult.rows;
@@ -31,8 +33,9 @@ const createProject = async (req, res) => {
 
     const status = freelancer_id ? 'assigned' : 'open';
 
+    // TABLE: projects (lowercase, no quotes)
     const result = await db.query(
-      `INSERT INTO "Projects" (title, description, budget, client_id, freelancer_id, status)
+      `INSERT INTO projects (title, description, budget, client_id, freelancer_id, status)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
       [title, description || null, budget || null, req.user.id, freelancer_id || null, status]
     );
@@ -56,21 +59,19 @@ const listProjects = async (req, res) => {
     const role   = req.user.role;
     const params = [];
 
-    // FIX: Base query is a clean template literal with no trailing content.
-    // All dynamic clauses are appended with a guaranteed leading space so
-    // concatenation never produces run-together tokens like:
-    //   "...freelancer_idWHERE..."  or  "...$1AND..."  or  "...$1ORDER BY..."
+    // TABLES: projects, users (all lowercase, no quotes)
+    // Base query ends cleanly — all appended clauses carry an explicit
+    // leading space to prevent token fusion (e.g. "...freelancer_idWHERE...").
     let query = `
       SELECT p.*, c.name AS client_name, c.avg_rating AS client_rating,
              f.name AS freelancer_name, f.avg_rating AS freelancer_rating
-      FROM "Projects" p
-      JOIN "Users" c ON c.id = p.client_id
-      LEFT JOIN "Users" f ON f.id = p.freelancer_id
+      FROM projects p
+      JOIN users c ON c.id = p.client_id
+      LEFT JOIN users f ON f.id = p.freelancer_id
     `;
 
-    // FIX: userId is always pushed first so the placeholder index is
-    // always $1 for the mandatory user-scoping WHERE clause.
-    // The leading space before WHERE is explicit and unconditional.
+    // userId is always the first param → always $1 for the WHERE clause.
+    // Leading space before WHERE is explicit and unconditional.
     params.push(userId);
     if (role === 'client') {
       query += ` WHERE p.client_id = $${params.length}`;
@@ -78,14 +79,13 @@ const listProjects = async (req, res) => {
       query += ` WHERE p.freelancer_id = $${params.length}`;
     }
 
-    // FIX: Leading space before AND is explicit — prevents "...$1AND..." bug.
+    // Leading space before AND prevents "...$1AND p.status..." fusion.
     if (status) {
       params.push(status);
       query += ` AND p.status = $${params.length}`;
     }
 
-    // FIX: Leading space before ORDER BY is explicit — prevents
-    // "...$1ORDER BY..." or "...'open'ORDER BY..." bugs.
+    // Leading space before ORDER BY prevents "...$1ORDER BY..." fusion.
     query += ' ORDER BY p.created_at DESC';
 
     const result = await db.query(query, params);
@@ -104,7 +104,11 @@ const completeProject = async (req, res) => {
   try {
     const projectId = parseInt(req.params.id);
 
-    const projectResult = await db.query('SELECT * FROM "Projects" WHERE id = $1', [projectId]);
+    // TABLE: projects (lowercase, no quotes)
+    const projectResult = await db.query(
+      'SELECT * FROM projects WHERE id = $1',
+      [projectId]
+    );
     const rows = projectResult.rows;
 
     if (rows.length === 0) {
@@ -126,8 +130,9 @@ const completeProject = async (req, res) => {
       return res.status(400).json({ error: 'Project must be assigned before completing.' });
     }
 
+    // TABLE: projects (lowercase, no quotes)
     await db.query(
-      "UPDATE \"Projects\" SET status = 'completed', completed_at = NOW() WHERE id = $1",
+      "UPDATE projects SET status = 'completed', completed_at = NOW() WHERE id = $1",
       [projectId]
     );
 
@@ -145,7 +150,11 @@ const assignFreelancer = async (req, res) => {
     const projectId = parseInt(req.params.id);
     const { freelancer_id } = req.body;
 
-    const projectResult = await db.query('SELECT * FROM "Projects" WHERE id = $1', [projectId]);
+    // TABLE: projects (lowercase, no quotes)
+    const projectResult = await db.query(
+      'SELECT * FROM projects WHERE id = $1',
+      [projectId]
+    );
     const rows = projectResult.rows;
 
     if (rows.length === 0) return res.status(404).json({ error: 'Project not found.' });
@@ -156,17 +165,18 @@ const assignFreelancer = async (req, res) => {
       return res.status(403).json({ error: 'Only the project client can assign freelancers.' });
     }
 
-    // Validate freelancer
+    // Validate freelancer — TABLE: users (lowercase, no quotes)
     const flResult = await db.query(
-      "SELECT id FROM \"Users\" WHERE id = $1 AND role = 'freelancer'",
+      "SELECT id FROM users WHERE id = $1 AND role = 'freelancer'",
       [freelancer_id]
     );
     const fl = flResult.rows;
 
     if (fl.length === 0) return res.status(400).json({ error: 'Invalid freelancer.' });
 
+    // TABLE: projects (lowercase, no quotes)
     await db.query(
-      "UPDATE \"Projects\" SET freelancer_id = $1, status = 'assigned' WHERE id = $2",
+      "UPDATE projects SET freelancer_id = $1, status = 'assigned' WHERE id = $2",
       [freelancer_id, projectId]
     );
 
