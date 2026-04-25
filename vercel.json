@@ -19,6 +19,6 @@
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "@fcrs_api_url"
+    "REACT_APP_API_URL": "https://fcrs-full-1.onrender.com/api"
   }
 }
