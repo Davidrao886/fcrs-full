@@ -1,0 +1,39 @@
+services:
+  # Backend API on Render
+  - type: web
+    name: fcrs-backend
+    env: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        fromDatabase:
+          name: fcrs-mysql
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: fcrs-mysql
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: fcrs-mysql
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: fcrs-mysql
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: fcrs-mysql
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://your-app.vercel.app  # update this after deploying frontend
