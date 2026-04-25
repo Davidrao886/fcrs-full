@@ -1,5 +1,5 @@
 // src/components/Navbar.js
-import React, { useState } from 'react';
+import React from "react";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
