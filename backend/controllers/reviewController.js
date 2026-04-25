@@ -1,4 +1,5 @@
 // controllers/reviewController.js — Review submission logic
+// MIGRATED: MySQL → PostgreSQL (pg library)
 const db = require('../config/db');
 
 // ── POST /review — Submit a review ──────────────────────────
@@ -17,7 +18,12 @@ const createReview = async (req, res) => {
     }
 
     // Get the project
-    const [rows] = await db.query('SELECT * FROM Projects WHERE id = ?', [project_id]);
+    // CHANGED: [rows] destructuring → result.rows pattern
+    // CHANGED: ? → $1 for PostgreSQL parameterization
+    // CHANGED: "Projects" quoted to preserve case-sensitive table name
+    const projectResult = await db.query('SELECT * FROM "Projects" WHERE id = $1', [project_id]);
+    const rows = projectResult.rows;
+
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Project not found.' });
     }
@@ -45,28 +51,38 @@ const createReview = async (req, res) => {
     }
 
     // Check for duplicate review (UNIQUE constraint will also catch this)
-    const [existing] = await db.query(
-      'SELECT id FROM Reviews WHERE project_id = ? AND reviewer_id = ?',
+    // CHANGED: [existing] destructuring → result.rows pattern
+    // CHANGED: ? → $1, $2 for PostgreSQL parameterization
+    // CHANGED: "Reviews" quoted to preserve case-sensitive table name
+    const existingResult = await db.query(
+      'SELECT id FROM "Reviews" WHERE project_id = $1 AND reviewer_id = $2',
       [project_id, reviewer_id]
     );
+    const existing = existingResult.rows;
+
     if (existing.length > 0) {
       return res.status(409).json({ error: 'You have already reviewed this project.' });
     }
 
     // Insert review (trigger will update reputation automatically)
-    const [result] = await db.query(
-      'INSERT INTO Reviews (project_id, reviewer_id, reviewee_id, rating, comment) VALUES (?, ?, ?, ?, ?)',
+    // CHANGED: ? → $1..$5 for PostgreSQL parameterization
+    // CHANGED: Added RETURNING id (PostgreSQL style) instead of relying on insertId
+    // CHANGED: "Reviews" quoted to preserve case-sensitive table name
+    const result = await db.query(
+      'INSERT INTO "Reviews" (project_id, reviewer_id, reviewee_id, rating, comment) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [project_id, reviewer_id, reviewee_id, ratingNum, comment || null]
     );
 
+    // CHANGED: result.rows[0].id instead of result.insertId
     res.status(201).json({
       message: 'Review submitted successfully!',
-      review_id: result.insertId
+      review_id: result.rows[0].id
     });
 
   } catch (err) {
-    // Handle duplicate entry from DB UNIQUE constraint
-    if (err.code === 'ER_DUP_ENTRY') {
+    // CHANGED: PostgreSQL uses error code '23505' for unique violations
+    //          instead of MySQL's 'ER_DUP_ENTRY'
+    if (err.code === '23505') {
       return res.status(409).json({ error: 'You have already reviewed this project.' });
     }
     console.error('createReview error:', err);
@@ -79,17 +95,21 @@ const getUserReviews = async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
 
-    const [reviews] = await db.query(
+    // CHANGED: [reviews] destructuring → result.rows pattern
+    // CHANGED: ? → $1 for PostgreSQL parameterization
+    // CHANGED: Table names quoted to preserve case-sensitivity
+    const result = await db.query(
       `SELECT r.id, r.rating, r.comment, r.created_at,
               reviewer.name AS reviewer_name,
               p.title AS project_title
-       FROM Reviews r
-       JOIN Users reviewer ON reviewer.id = r.reviewer_id
-       JOIN Projects p ON p.id = r.project_id
-       WHERE r.reviewee_id = ?
+       FROM "Reviews" r
+       JOIN "Users" reviewer ON reviewer.id = r.reviewer_id
+       JOIN "Projects" p ON p.id = r.project_id
+       WHERE r.reviewee_id = $1
        ORDER BY r.created_at DESC`,
       [userId]
     );
+    const reviews = result.rows;
 
     res.json({ reviews });
 

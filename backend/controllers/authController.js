@@ -1,4 +1,5 @@
 // controllers/authController.js — Signup and Login logic
+// MIGRATED: MySQL → PostgreSQL (pg library)
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const db     = require('../config/db');
@@ -20,24 +21,27 @@ const signup = async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters.' });
     }
 
-    // ✅ PostgreSQL syntax
+    // CHANGED: ? → $1 for PostgreSQL parameterization
     const existing = await db.query(
       'SELECT id FROM users WHERE email = $1',
       [email.toLowerCase()]
     );
 
+    // CHANGED: pg returns result.rows instead of destructured [rows]
     if (existing.rows.length > 0) {
       return res.status(409).json({ error: 'Email already registered.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ PostgreSQL insert
+    // CHANGED: Added RETURNING id (PostgreSQL style) instead of relying on insertId
+    // CHANGED: $1..$5 placeholders instead of ?
     const result = await db.query(
       'INSERT INTO users (name, email, password, role, bio) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [name, email.toLowerCase(), hashedPassword, role, bio || null]
     );
 
+    // CHANGED: result.rows[0].id instead of result.insertId
     const userId = result.rows[0].id;
 
     const token = jwt.sign(
@@ -67,11 +71,13 @@ const login = async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
+    // CHANGED: ? → $1 for PostgreSQL parameterization
     const result = await db.query(
       'SELECT * FROM users WHERE email = $1',
       [email.toLowerCase()]
     );
 
+    // CHANGED: pg returns result.rows
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }

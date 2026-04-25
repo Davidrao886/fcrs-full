@@ -1,4 +1,5 @@
 // controllers/projectController.js — Project CRUD operations
+// MIGRATED: MySQL → PostgreSQL (pg library)
 const db = require('../config/db');
 
 // ── POST /project — Create a new project ────────────────────
@@ -17,10 +18,15 @@ const createProject = async (req, res) => {
 
     // If freelancer_id provided, validate it exists and is a freelancer
     if (freelancer_id) {
-      const [fl] = await db.query(
-        "SELECT id FROM Users WHERE id = ? AND role = 'freelancer'",
+      // CHANGED: [fl] destructuring → result.rows pattern
+      // CHANGED: ? → $1 for PostgreSQL parameterization
+      // CHANGED: "Users" quoted to preserve case-sensitive table name
+      const flResult = await db.query(
+        "SELECT id FROM \"Users\" WHERE id = $1 AND role = 'freelancer'",
         [freelancer_id]
       );
+      const fl = flResult.rows;
+
       if (fl.length === 0) {
         return res.status(400).json({ error: 'Invalid freelancer ID.' });
       }
@@ -28,15 +34,19 @@ const createProject = async (req, res) => {
 
     const status = freelancer_id ? 'assigned' : 'open';
 
-    const [result] = await db.query(
-      `INSERT INTO Projects (title, description, budget, client_id, freelancer_id, status)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+    // CHANGED: ? → $1..$6 for PostgreSQL parameterization
+    // CHANGED: Added RETURNING id (PostgreSQL style) instead of relying on insertId
+    // CHANGED: "Projects" quoted to preserve case-sensitive table name
+    const result = await db.query(
+      `INSERT INTO "Projects" (title, description, budget, client_id, freelancer_id, status)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
       [title, description || null, budget || null, req.user.id, freelancer_id || null, status]
     );
 
+    // CHANGED: result.rows[0].id instead of result.insertId
     res.status(201).json({
       message: 'Project created successfully!',
-      project_id: result.insertId
+      project_id: result.rows[0].id
     });
 
   } catch (err) {
@@ -49,34 +59,43 @@ const createProject = async (req, res) => {
 const listProjects = async (req, res) => {
   try {
     const { status } = req.query;
+
+    // CHANGED: Table names quoted to preserve case-sensitivity
     let query = `
       SELECT p.*, c.name AS client_name, c.avg_rating AS client_rating,
              f.name AS freelancer_name, f.avg_rating AS freelancer_rating
-      FROM Projects p
-      JOIN Users c ON c.id = p.client_id
-      LEFT JOIN Users f ON f.id = p.freelancer_id
+      FROM "Projects" p
+      JOIN "Users" c ON c.id = p.client_id
+      LEFT JOIN "Users" f ON f.id = p.freelancer_id
     `;
     const params = [];
 
     // Filter by logged-in user's projects
     const userId = req.user.id;
     const role   = req.user.role;
+
     if (role === 'client') {
-      query += ' WHERE p.client_id = ?';
+      // CHANGED: ? → $1 for PostgreSQL parameterization
       params.push(userId);
+      query += ` WHERE p.client_id = $${params.length}`;
     } else {
-      query += ' WHERE p.freelancer_id = ?';
+      // CHANGED: ? → $1 for PostgreSQL parameterization
       params.push(userId);
+      query += ` WHERE p.freelancer_id = $${params.length}`;
     }
 
     if (status) {
-      query += ' AND p.status = ?';
+      // CHANGED: ? → $2 for PostgreSQL parameterization (dynamic index)
       params.push(status);
+      query += ` AND p.status = $${params.length}`;
     }
 
     query += ' ORDER BY p.created_at DESC';
 
-    const [projects] = await db.query(query, params);
+    // CHANGED: [projects] destructuring → result.rows pattern
+    const result = await db.query(query, params);
+    const projects = result.rows;
+
     res.json({ projects });
 
   } catch (err) {
@@ -90,8 +109,12 @@ const completeProject = async (req, res) => {
   try {
     const projectId = parseInt(req.params.id);
 
-    // Get the project
-    const [rows] = await db.query('SELECT * FROM Projects WHERE id = ?', [projectId]);
+    // CHANGED: [rows] destructuring → result.rows pattern
+    // CHANGED: ? → $1 for PostgreSQL parameterization
+    // CHANGED: "Projects" quoted to preserve case-sensitive table name
+    const projectResult = await db.query('SELECT * FROM "Projects" WHERE id = $1', [projectId]);
+    const rows = projectResult.rows;
+
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Project not found.' });
     }
@@ -111,8 +134,10 @@ const completeProject = async (req, res) => {
       return res.status(400).json({ error: 'Project must be assigned before completing.' });
     }
 
+    // CHANGED: ? → $1 for PostgreSQL parameterization
+    // CHANGED: NOW() is valid in both MySQL and PostgreSQL, no change needed
     await db.query(
-      "UPDATE Projects SET status = 'completed', completed_at = NOW() WHERE id = ?",
+      "UPDATE \"Projects\" SET status = 'completed', completed_at = NOW() WHERE id = $1",
       [projectId]
     );
 
@@ -130,23 +155,35 @@ const assignFreelancer = async (req, res) => {
     const projectId = parseInt(req.params.id);
     const { freelancer_id } = req.body;
 
-    const [rows] = await db.query('SELECT * FROM Projects WHERE id = ?', [projectId]);
+    // CHANGED: [rows] destructuring → result.rows pattern
+    // CHANGED: ? → $1 for PostgreSQL parameterization
+    // CHANGED: "Projects" quoted to preserve case-sensitive table name
+    const projectResult = await db.query('SELECT * FROM "Projects" WHERE id = $1', [projectId]);
+    const rows = projectResult.rows;
+
     if (rows.length === 0) return res.status(404).json({ error: 'Project not found.' });
 
     const project = rows[0];
+
     if (project.client_id !== req.user.id) {
       return res.status(403).json({ error: 'Only the project client can assign freelancers.' });
     }
 
     // Validate freelancer
-    const [fl] = await db.query(
-      "SELECT id FROM Users WHERE id = ? AND role = 'freelancer'",
+    // CHANGED: [fl] destructuring → result.rows pattern
+    // CHANGED: ? → $1 for PostgreSQL parameterization
+    // CHANGED: "Users" quoted to preserve case-sensitive table name
+    const flResult = await db.query(
+      "SELECT id FROM \"Users\" WHERE id = $1 AND role = 'freelancer'",
       [freelancer_id]
     );
+    const fl = flResult.rows;
+
     if (fl.length === 0) return res.status(400).json({ error: 'Invalid freelancer.' });
 
+    // CHANGED: ? → $1, $2 for PostgreSQL parameterization
     await db.query(
-      "UPDATE Projects SET freelancer_id = ?, status = 'assigned' WHERE id = ?",
+      "UPDATE \"Projects\" SET freelancer_id = $1, status = 'assigned' WHERE id = $2",
       [freelancer_id, projectId]
     );
 
