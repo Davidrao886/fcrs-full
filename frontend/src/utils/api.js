@@ -1,18 +1,26 @@
-// src/utils/api.js — Axios instance with auth token injection
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Use env variable ONLY (no fallback in production)
+const API_URL = process.env.REACT_APP_API_URL;
 
-const api = axios.create({ baseURL: API_URL });
+if (!API_URL) {
+  throw new Error("❌ API URL is not defined. Check Vercel environment variables.");
+}
 
-// Attach JWT token to every request if available
+const api = axios.create({
+  baseURL: API_URL,
+});
+
+// Attach JWT token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('fcrs_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
-// Handle 401 globally — redirect to login
+// Handle 401 globally
 api.interceptors.response.use(
   (res) => res,
   (err) => {
