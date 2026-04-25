@@ -14,10 +14,22 @@ app.get("/", (req, res) => {
 });
 
 // ── Middleware ────────────────────────────────────────────────
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 app.use(express.json());         // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true }));
