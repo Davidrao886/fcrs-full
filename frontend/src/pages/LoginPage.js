@@ -38,7 +38,9 @@ const LoginPage = () => {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-logo">◈</div>
+          <div className="auth-logo-wrap">
+            <span className="auth-logo">◈</span>
+          </div>
           <h1>Welcome back</h1>
           <p>Sign in to your FCRS account</p>
         </div>

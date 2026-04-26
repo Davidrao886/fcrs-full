@@ -1,60 +1,102 @@
-/* AuthPages.css */
+/* AuthPages.css — Clean centered auth card */
 .auth-wrapper {
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - 62px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 32px 24px;
+  background: var(--bg-subtle);
 }
 
 .auth-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 36px;
+  border-radius: var(--radius-xl);
+  padding: 40px 36px;
+  box-shadow: var(--shadow-md);
 }
 
 .auth-header {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
+
+.auth-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background: var(--blue);
+  border-radius: 14px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+
 .auth-logo {
-  font-size: 2.5rem;
-  color: var(--accent);
-  margin-bottom: 12px;
+  font-size: 1.6rem;
+  color: #ffffff;
+  display: block;
 }
+
 .auth-header h1 {
   font-size: 1.6rem;
-  margin-bottom: 4px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: var(--navy);
 }
 .auth-header p {
   color: var(--text-muted);
   font-size: 0.9rem;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 .auth-footer {
   text-align: center;
-  margin-top: 20px;
-  font-size: 0.88rem;
+  margin-top: 24px;
+  font-size: 0.875rem;
   color: var(--text-muted);
+}
+.auth-footer a {
+  color: var(--blue);
+  font-weight: 600;
 }
 
 .demo-hint {
   margin-top: 20px;
-  padding: 12px;
-  background: var(--bg);
-  border: 1px dashed var(--border-light);
+  padding: 14px 16px;
+  background: var(--blue-light);
+  border: 1px solid var(--blue-mid);
   border-radius: var(--radius);
   font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.6;
+  color: #1e40af;
+  line-height: 1.7;
 }
+.demo-hint strong { font-weight: 700; }
 .demo-hint code {
-  background: var(--bg-hover);
-  padding: 1px 5px;
+  background: var(--blue-mid);
+  padding: 1px 6px;
   border-radius: 4px;
-  color: var(--accent);
-  font-family: monospace;
+  color: var(--blue);
+  font-family: 'Geist Mono', monospace;
+  font-size: 0.85em;
 }

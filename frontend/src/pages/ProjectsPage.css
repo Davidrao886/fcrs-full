@@ -2,26 +2,28 @@
 .dispute-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(15, 23, 42, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 200;
   padding: 24px;
+  backdrop-filter: blur(4px);
 }
 
 .dispute-modal {
   background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
-  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 32px;
   width: 100%;
   max-width: 480px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-md);
 }
 
 .dispute-modal h3 {
-  font-family: 'Syne', sans-serif;
-  margin-bottom: 12px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  margin-bottom: 8px;
   color: var(--error);
+  font-size: 1.1rem;
 }

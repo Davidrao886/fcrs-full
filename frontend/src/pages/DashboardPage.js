@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import { StarDisplay } from '../components/StarRating';
+import './DashboardPage.css';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -58,7 +59,7 @@ const DashboardPage = () => {
           <div className="stat-value">{u.avg_rating > 0 ? Number(u.avg_rating).toFixed(1) : '—'}</div>
           <div className="stat-label">Avg Rating</div>
           {u.avg_rating > 0 && (
-            <div style={{ marginTop: 6 }}>
+            <div style={{ marginTop: 8 }}>
               <StarDisplay rating={u.avg_rating} size="0.9rem" />
             </div>
           )}
@@ -77,9 +78,9 @@ const DashboardPage = () => {
       <div className="grid-2">
         {/* Recent Projects */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h2 style={{ fontSize: '1rem', fontFamily: 'Syne, sans-serif' }}>Recent Projects</h2>
-            <Link to="/projects" style={{ fontSize: '0.82rem', color: 'var(--accent)' }}>View all →</Link>
+          <div className="dashboard-section-header">
+            <span className="dashboard-section-title">Recent Projects</span>
+            <Link to="/projects" className="dashboard-section-link">View all →</Link>
           </div>
 
           {recentProjects.length === 0 ? (
@@ -93,10 +94,10 @@ const DashboardPage = () => {
             </div>
           ) : (
             recentProjects.map(p => (
-              <div key={p.id} className="card" style={{ marginBottom: 10, padding: '14px 16px' }}>
+              <div key={p.id} className="card" style={{ marginBottom: 10, padding: '16px 18px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 600, marginBottom: 4 }}>{p.title}</div>
+                    <div style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 700, marginBottom: 4, color: 'var(--navy)', fontSize: '0.95rem' }}>{p.title}</div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                       {p.client_name && `Client: ${p.client_name}`}
                       {p.freelancer_name && ` · Freelancer: ${p.freelancer_name}`}
@@ -104,12 +105,12 @@ const DashboardPage = () => {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                     <span className={`badge badge-${p.status}`}>{p.status}</span>
-                    {p.budget && <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '0.85rem' }}>${Number(p.budget).toLocaleString()}</span>}
+                    {p.budget && <span style={{ color: 'var(--blue)', fontWeight: 800, fontSize: '0.85rem' }}>${Number(p.budget).toLocaleString()}</span>}
                   </div>
                 </div>
                 {p.status === 'completed' && (
-                  <div style={{ marginTop: 10 }}>
-                    <Link to={`/review/${p.id}`} className="btn btn-outline btn-sm">Write Review</Link>
+                  <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                    <Link to={`/review/${p.id}`} className="btn btn-outline btn-sm">★ Write Review</Link>
                   </div>
                 )}
               </div>
@@ -119,9 +120,9 @@ const DashboardPage = () => {
 
         {/* Recent Reviews */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h2 style={{ fontSize: '1rem', fontFamily: 'Syne, sans-serif' }}>Recent Reviews</h2>
-            <Link to="/profile" style={{ fontSize: '0.82rem', color: 'var(--accent)' }}>View all →</Link>
+          <div className="dashboard-section-header">
+            <span className="dashboard-section-title">Recent Reviews</span>
+            <Link to="/profile" className="dashboard-section-link">View all →</Link>
           </div>
 
           {recentReviews.length === 0 ? (

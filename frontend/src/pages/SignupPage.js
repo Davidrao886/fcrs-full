@@ -41,7 +41,9 @@ const SignupPage = () => {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-logo">◈</div>
+          <div className="auth-logo-wrap">
+            <span className="auth-logo">◈</span>
+          </div>
           <h1>Create account</h1>
           <p>Join the Freelancer Credibility System</p>
         </div>

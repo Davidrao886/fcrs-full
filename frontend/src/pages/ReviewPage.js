@@ -39,7 +39,7 @@ const ReviewPage = () => {
     <div className="review-wrapper">
       <div className="review-form-card">
         <div className="review-form-header">
-          <div className="review-icon">★</div>
+          <div className="review-icon-wrap">★</div>
           <h1>Write a Review</h1>
           <p>Share your experience for Project #{projectId}</p>
         </div>
@@ -50,13 +50,13 @@ const ReviewPage = () => {
         <form onSubmit={handleSubmit}>
           <div className="form-group" style={{ textAlign: 'center' }}>
             <label style={{ display: 'block', textAlign: 'left' }}>Your Rating *</label>
-            <div style={{ marginTop: 8 }}>
+            <div style={{ marginTop: 10 }}>
               <StarRating value={rating} onChange={setRating} />
             </div>
             {rating > 0 && (
-              <p className="rating-label">
+              <span className="rating-label">
                 {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent!'][rating]}
-              </p>
+              </span>
             )}
           </div>
 

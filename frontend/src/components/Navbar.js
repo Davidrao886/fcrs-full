@@ -39,8 +39,8 @@ const Navbar = () => {
           {user ? (
             <>
               <span className="nav-user">
-                <span className={`role-dot role-${user.role}`}></span>
-                {user.name.split(' ')[0]}
+                <span className="nav-avatar">{user.name?.charAt(0)}</span>
+                <span>{user.name.split(' ')[0]}</span>
               </span>
               <button className="btn btn-outline btn-sm" onClick={handleLogout}>
                 Logout
