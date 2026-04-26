@@ -22,7 +22,7 @@ const Navbar = () => {
         {/* Brand */}
         <Link to="/dashboard" className="navbar-brand">
           <span className="brand-icon">◈</span>
-          <span className="brand-text">FCRS</span>
+          <span className="brand-text">SYSKOM</span>
         </Link>
 
         {/* Desktop nav links */}
